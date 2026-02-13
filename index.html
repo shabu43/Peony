@@ -1,299 +1,111 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Will you be my Valentine?</title>
-  <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: radial-gradient(circle at 20% 10%, #ffe1ef, transparent 45%),
-                  radial-gradient(circle at 80% 30%, #ffecc7, transparent 50%),
-                  radial-gradient(circle at 30% 90%, #e5f2ff, transparent 50%),
-                  #fff;
-      overflow: hidden;
+<script>
+  const yesBtn = document.getElementById('yesBtn');
+  const noBtn = document.getElementById('noBtn');
+  const result = document.getElementById('result');
+  const rain = document.getElementById('rain');
+
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  // ✅ Start "No" near "Yes"
+  function placeNoNearYes() {
+    const padding = 12;
+
+    const y = yesBtn.getBoundingClientRect();
+    const n = noBtn.getBoundingClientRect();
+
+    // Put it to the right of Yes (or slightly below if no space)
+    let x = y.right + 14;
+    let top = y.top + (y.height - (n.height || 44)) / 2;
+
+    // Keep inside viewport
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = (n.width || 120);
+    const h = (n.height || 44);
+
+    // If right side overflows, place below Yes instead
+    if (x + w + padding > vw) {
+      x = y.left;
+      top = y.bottom + 12;
     }
 
-    .card {
-      width: min(560px, 92vw);
-      padding: 28px 22px;
-      border-radius: 22px;
-      background: rgba(255,255,255,0.75);
-      box-shadow: 0 18px 60px rgba(0,0,0,0.12);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 105, 180, 0.25);
-      text-align: center;
-      position: relative;
+    x = clamp(x, padding, vw - w - padding);
+    top = clamp(top, padding, vh - h - padding);
+
+    noBtn.style.left = `${x}px`;
+    noBtn.style.top = `${top}px`;
+    noBtn.style.transform = `translate(0, 0)`;
+  }
+
+  // Run away position (anywhere)
+  function randomPositionForNo() {
+    const padding = 14;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const rect = noBtn.getBoundingClientRect();
+    const w = rect.width || 120;
+    const h = rect.height || 44;
+
+    let x = padding + Math.random() * (vw - w - padding * 2);
+    let y = padding + Math.random() * (vh - h - padding * 2);
+
+    noBtn.style.left = `${x}px`;
+    noBtn.style.top = `${y}px`;
+    noBtn.style.transform = `translate(0, 0)`;
+  }
+
+  const flee = () => randomPositionForNo();
+
+  window.addEventListener('load', () => {
+    noBtn.classList.add('disabled'); // keep unclickable
+    placeNoNearYes();                // ✅ start near Yes
+  });
+
+  window.addEventListener('resize', () => {
+    placeNoNearYes(); // keep it near Yes after resize
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    const r = noBtn.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+    if (dist < 140) flee();
+  });
+
+  document.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    const r = noBtn.getBoundingClientRect();
+    const near =
+      t.clientX >= r.left - 80 && t.clientX <= r.right + 80 &&
+      t.clientY >= r.top - 80 && t.clientY <= r.bottom + 80;
+    if (near) flee();
+  }, { passive: true });
+
+  yesBtn.addEventListener('click', () => {
+    result.classList.add('show');
+    noBtn.style.display = 'none';
+    startEmojiRain();
+    document.querySelector('h1').textContent = "oyeee!! 💞";
+    document.querySelector('p').textContent = "Best choice ever 😘";
+  });
+
+  function startEmojiRain() {
+    rain.classList.add('show');
+    const emojis = ["💖","💘","💗","💞","💕","🥰","😘","😍","🌸"];
+    for (let i = 0; i < 40; i++) {
+      const span = document.createElement('span');
+      span.className = 'heart';
+      span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      span.style.left = (Math.random() * 100) + "vw";
+      span.style.animationDuration = (2.5 + Math.random() * 2.5) + "s";
+      span.style.animationDelay = (Math.random() * 0.8) + "s";
+      span.style.fontSize = (18 + Math.random() * 18) + "px";
+      rain.appendChild(span);
+      const dur = parseFloat(span.style.animationDuration);
+      const del = parseFloat(span.style.animationDelay);
+      setTimeout(() => span.remove(), (dur + del) * 1000 + 200);
     }
-
-    h1 {
-      margin: 0 0 10px;
-      font-size: clamp(26px, 4vw, 36px);
-      letter-spacing: 0.2px;
-    }
-
-    p {
-      margin: 0 0 18px;
-      color: #333;
-      font-size: 16px;
-      opacity: 0.9;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      padding-top: 6px;
-    }
-
-    button {
-      border: 0;
-      border-radius: 999px;
-      padding: 12px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: transform 120ms ease, filter 120ms ease;
-      user-select: none;
-    }
-
-    #yesBtn {
-      background: linear-gradient(135deg, #ff4da6, #ff7bbf);
-      color: white;
-      box-shadow: 0 12px 24px rgba(255, 77, 166, 0.28);
-    }
-    #yesBtn:hover { filter: brightness(1.05); transform: translateY(-1px); }
-    #yesBtn:active { transform: translateY(0px) scale(0.98); }
-
-    /* "No" is positioned absolutely so it can run away */
-    #noBtn {
-      position: fixed;
-      left: 50%;
-      top: 60%;
-      transform: translate(-50%, -50%);
-      background: #f2f2f2;
-      color: #444;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.10);
-      cursor: default;
-    }
-
-    /* Make it unclickable */
-    #noBtn.disabled {
-      pointer-events: none;
-    }
-
-    .result {
-      margin-top: 18px;
-      display: none;
-    }
-
-    .result.show {
-      display: block;
-      animation: pop 420ms ease both;
-    }
-
-    @keyframes pop {
-      from { transform: scale(0.96); opacity: 0; }
-      to   { transform: scale(1); opacity: 1; }
-    }
-
-    .big {
-      font-size: clamp(22px, 4vw, 30px);
-      margin: 10px 0 8px;
-    }
-
-    .emoji-rain {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      display: none;
-    }
-    .emoji-rain.show { display: block; }
-
-    .heart {
-      position: absolute;
-      font-size: 22px;
-      animation: fall linear forwards;
-      opacity: 0.95;
-      filter: drop-shadow(0 8px 10px rgba(0,0,0,0.12));
-    }
-
-    @keyframes fall {
-      from { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
-      10%  { opacity: 1; }
-      to   { transform: translateY(110vh) rotate(360deg); opacity: 0.98; }
-    }
-
-    .hint {
-      margin-top: 12px;
-      font-size: 13px;
-      opacity: 0.7;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="card" id="card">
-    <h1>Will you be my Valentine? 💖</h1>
-    <p>Choose wisely 😌</p>
-
-    <div class="btn-row">
-      <button id="yesBtn" aria-label="Yes">Yes 💘</button>
-    </div>
-
-    <div class="result" id="result">
-      <div class="big">I love you <strong>Peony</strong> 💖🌸</div>
-      <div style="font-size: 20px;">😍🥰😘💗💞💓💘</div>
-      <div class="hint">You just made my day!</div>
-    </div>
-
-    <div class="hint">Try clicking “No” 😄 (if you can)</div>
-  </div>
-
-  <button id="noBtn" class="disabled" aria-hidden="true">No 🙈</button>
-
-  <div class="emoji-rain" id="rain"></div>
-
-  <script>
-    const yesBtn = document.getElementById('yesBtn');
-    const noBtn = document.getElementById('noBtn');
-    const result = document.getElementById('result');
-    const rain = document.getElementById('rain');
-
-    // Place the "No" button somewhere not overlapping the card
-    function randomPositionForNo() {
-      const padding = 14;
-
-      // Keep within viewport
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-
-      const rect = noBtn.getBoundingClientRect();
-      const w = rect.width || 120;
-      const h = rect.height || 44;
-
-      // Avoid placing too close to the center card (rough zone)
-      const avoid = {
-        x1: vw * 0.25,
-        x2: vw * 0.75,
-        y1: vh * 0.25,
-        y2: vh * 0.75
-      };
-
-      let x, y, tries = 0;
-      do {
-        x = padding + Math.random() * (vw - w - padding * 2);
-        y = padding + Math.random() * (vh - h - padding * 2);
-        tries++;
-      } while (
-        tries < 25 &&
-        x > avoid.x1 && x < avoid.x2 &&
-        y > avoid.y1 && y < avoid.y2
-      );
-
-      noBtn.style.left = `${x}px`;
-      noBtn.style.top = `${y}px`;
-      noBtn.style.transform = `translate(0, 0)`;
-    }
-
-    // Run away on approach (mouse) and on touch attempts
-    const flee = () => randomPositionForNo();
-
-    window.addEventListener('load', () => {
-      randomPositionForNo();
-      // keep it unclickable
-      noBtn.classList.add('disabled');
-    });
-
-    window.addEventListener('resize', randomPositionForNo);
-
-    // Make it move before you can click it
-    document.addEventListener('mousemove', (e) => {
-      const r = noBtn.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist < 140) flee();
-    });
-
-    // On mobile, move when user taps near it
-    document.addEventListener('touchstart', (e) => {
-      const t = e.touches[0];
-      const r = noBtn.getBoundingClientRect();
-      const near =
-        t.clientX >= r.left - 80 &&
-        t.clientX <= r.right + 80 &&
-        t.clientY >= r.top - 80 &&
-        t.clientY <= r.bottom + 80;
-      if (near) flee();
-    }, { passive: true });
-
-    // YES click action
-    yesBtn.addEventListener('click', () => {
-      result.classList.add('show');
-      startEmojiRain();
-      // Hide the No button after yes
-      noBtn.style.display = 'none';
-      // Slightly change headline vibe
-      document.querySelector('h1').textContent = "oyeeee 💞";
-      document.querySelector('p').textContent = "Best choice ever 😘";
-    });
-
-    function startEmojiRain() {
-      rain.classList.add('show');
-      const emojis = ["💖","💘","💗","💞","💕","🥰","😘","😍","🌸"];
-      const count = 40;
-
-      for (let i = 0; i < count; i++) {
-        const span = document.createElement('span');
-        span.className = 'heart';
-        span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-
-        const left = Math.random() * 100;
-        const duration = 2.5 + Math.random() * 2.5;
-        const delay = Math.random() * 0.8;
-        const size = 18 + Math.random() * 18;
-
-        span.style.left = left + "vw";
-        span.style.animationDuration = duration + "s";
-        span.style.animationDelay = delay + "s";
-        span.style.fontSize = size + "px";
-
-        rain.appendChild(span);
-
-        // Cleanup
-        setTimeout(() => span.remove(), (duration + delay) * 1000 + 200);
-      }
-
-      // Keep a soft ongoing rain for a bit
-      let bursts = 0;
-      const interval = setInterval(() => {
-        bursts++;
-        for (let i = 0; i < 18; i++) {
-          const span = document.createElement('span');
-          span.className = 'heart';
-          span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-          span.style.left = (Math.random() * 100) + "vw";
-          span.style.animationDuration = (2.2 + Math.random() * 2.8) + "s";
-          span.style.animationDelay = (Math.random() * 0.3) + "s";
-          span.style.fontSize = (18 + Math.random() * 18) + "px";
-          rain.appendChild(span);
-          const dur = parseFloat(span.style.animationDuration);
-          const del = parseFloat(span.style.animationDelay);
-          setTimeout(() => span.remove(), (dur + del) * 1000 + 200);
-        }
-        if (bursts >= 6) clearInterval(interval);
-      }, 700);
-    }
-  </script>
-</body>
-</html>
+  }
+</script>
