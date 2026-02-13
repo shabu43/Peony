@@ -6,27 +6,34 @@
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-  // ✅ Start "No" near "Yes"
+  // ✅ MODIFIED: Start "No" right next to "Yes" (same row, centered)
   function placeNoNearYes() {
-    const padding = 12;
+    const gap = 14;      // space between Yes and No
+    const padding = 12;  // keep inside viewport
 
     const y = yesBtn.getBoundingClientRect();
-    const n = noBtn.getBoundingClientRect();
 
-    // Put it to the right of Yes (or slightly below if no space)
-    let x = y.right + 14;
-    let top = y.top + (y.height - (n.height || 44)) / 2;
+    // Measure "No" size reliably (even if not fully laid out yet)
+    const w = noBtn.offsetWidth || 120;
+    const h = noBtn.offsetHeight || 44;
+
+    // Start to the RIGHT of the Yes button (same vertical center)
+    let x = y.right + gap;
+    let top = y.top + (y.height - h) / 2;
 
     // Keep inside viewport
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const w = (n.width || 120);
-    const h = (n.height || 44);
 
-    // If right side overflows, place below Yes instead
+    // If right side overflows, start to the LEFT of Yes
     if (x + w + padding > vw) {
+      x = y.left - w - gap;
+    }
+
+    // If still overflow (tiny screens), put it BELOW Yes
+    if (x < padding) {
       x = y.left;
-      top = y.bottom + 12;
+      top = y.bottom + gap;
     }
 
     x = clamp(x, padding, vw - w - padding);
@@ -87,7 +94,7 @@
     result.classList.add('show');
     noBtn.style.display = 'none';
     startEmojiRain();
-    document.querySelector('h1').textContent = "oyeee!! 💞";
+    document.querySelector('h1').textContent = "YAY!! 💞";
     document.querySelector('p').textContent = "Best choice ever 😘";
   });
 
